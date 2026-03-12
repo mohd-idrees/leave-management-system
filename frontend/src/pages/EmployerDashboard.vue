@@ -2,24 +2,39 @@
 
 <div class="flex">
 
+<!-- Sidebar -->
 <Sidebar @changeTab="currentTab = $event"/>
 
 <div class="flex-1 p-6">
 
-<h2 class="text-xl font-semibold mb-2">
-{{ greeting }}, {{ username }} 👋
-</h2>
+<!-- Header -->
 
+<div class="flex justify-between items-center mb-6">
+
+<div>
+<h1 class="text-2xl font-bold">
+Welcome, {{ name }}
+</h1>
+
+<p class="text-gray-500">
+{{ today }} | {{ time }}
+</p>
+</div>
+
+
+</div>
 
 
 <!-- DASHBOARD TAB -->
 
 <div v-if="currentTab === 'dashboard'">
 
+<!-- Stats -->
+
 <div class="grid grid-cols-4 gap-4 mb-6">
 
 <div class="bg-blue-500 text-white p-4 rounded">
-Total Requests
+Total Leaves
 <p class="text-2xl font-bold">{{ total }}</p>
 </div>
 
@@ -41,33 +56,51 @@ Rejected
 </div>
 
 
-<h2 class="text-xl font-bold mb-4">
+<!-- Recent Leave Requests -->
+
+<h2 class="text-xl font-bold mb-3">
 Recent Leave Requests
 </h2>
 
 <table class="w-full border">
 
-<thead>
-<tr class="bg-gray-200">
+<thead class="bg-gray-200">
+<tr>
 <th class="p-2">Employee</th>
-<th class="p-2">Type</th>
+<th class="p-2">Leave Type</th>
+<th class="p-2">Start</th>
+<th class="p-2">End</th>
 <th class="p-2">Status</th>
 </tr>
 </thead>
 
 <tbody>
 
-<tr v-if="recent.length === 0">
-<td colspan="3" class="text-center p-4 text-gray-500">
-No leave requests found
+<tr
+v-for="leave in recentLeaves"
+:key="leave._id"
+class="text-center border-t"
+>
+
+<td class="p-2">
+{{ leave.employeeId?.name }}
 </td>
-</tr>
 
-<tr v-for="leave in recent" :key="leave._id">
+<td class="p-2">
+{{ leave.leaveType }}
+</td>
 
-<td class="p-2">{{leave.employeeId.name}}</td>
-<td class="p-2">{{leave.leaveType}}</td>
-<td class="p-2">{{leave.status}}</td>
+<td class="p-2">
+{{ new Date(leave.startDate).toLocaleDateString() }}
+</td>
+
+<td class="p-2">
+{{ new Date(leave.endDate).toLocaleDateString() }}
+</td>
+
+<td class="p-2">
+{{ leave.status }}
+</td>
 
 </tr>
 
@@ -83,29 +116,40 @@ No leave requests found
 
 <div v-if="currentTab === 'requests'">
 
-<h2 class="text-xl font-bold mb-4">
+<h2 class="text-xl font-bold mb-3">
 All Leave Requests
 </h2>
 
 <table class="w-full border">
 
-<thead>
-<tr class="bg-gray-200">
+<thead class="bg-gray-200">
+
+<tr>
 <th class="p-2">Employee</th>
-<th class="p-2">Type</th>
+<th class="p-2">Leave Type</th>
 <th class="p-2">Start</th>
 <th class="p-2">End</th>
 <th class="p-2">Status</th>
 <th class="p-2">Action</th>
 </tr>
+
 </thead>
 
 <tbody>
 
-<tr v-for="leave in leaves" :key="leave._id">
+<tr
+v-for="leave in leaves"
+:key="leave._id"
+class="text-center border-t"
+>
 
-<td class="p-2">{{leave.employeeId.name}}</td>
-<td class="p-2">{{leave.leaveType}}</td>
+<td class="p-2">
+{{ leave.employeeId?.name }}
+</td>
+
+<td class="p-2">
+{{ leave.leaveType }}
+</td>
 
 <td class="p-2">
 {{ new Date(leave.startDate).toLocaleDateString() }}
@@ -115,19 +159,21 @@ All Leave Requests
 {{ new Date(leave.endDate).toLocaleDateString() }}
 </td>
 
-<td class="p-2">{{leave.status}}</td>
+<td class="p-2">
+{{ leave.status }}
+</td>
 
 <td class="p-2">
 
 <button
-@click="approve(leave._id)"
-class="bg-green-500 text-white px-3 py-1 mr-2 rounded"
+@click="approveLeave(leave._id)"
+class="bg-green-500 text-white px-3 py-1 rounded mr-2"
 >
 Approve
 </button>
 
 <button
-@click="reject(leave._id)"
+@click="rejectLeave(leave._id)"
 class="bg-red-500 text-white px-3 py-1 rounded"
 >
 Reject
@@ -157,7 +203,7 @@ Employer Profile
 
 <div class="mb-4">
 <p class="text-gray-500 text-sm">Name</p>
-<p class="text-lg font-semibold">{{ username }}</p>
+<p class="text-lg font-semibold">{{ name }}</p>
 </div>
 
 <div class="mb-4">
@@ -189,48 +235,45 @@ import API from "../services/api"
 
 export default{
 
-components:{Sidebar},
+components:{ Sidebar },
 
 data(){
 return{
 
 leaves:[],
-recent:[],
+recentLeaves:[],
+name:"",
+email:"",
+role:"",
+today:"",
+time:"",
+currentTab:"dashboard",
+
 total:0,
 approved:0,
 pending:0,
-rejected:0,
-username:"",
-email:"",
-role:"",
-greeting:"",
-currentTab:"dashboard"
+rejected:0
 
 }
 },
 
-async mounted(){
+methods:{
 
-this.username = localStorage.getItem("name")
-this.email = localStorage.getItem("email")
-this.role = localStorage.getItem("role")
+logout(){
+localStorage.clear()
+this.$router.push("/")
+},
 
-const hour = new Date().getHours()
+updateTime(){
+this.time = new Date().toLocaleTimeString()
+},
 
-if(hour < 12){
-this.greeting = "Good Morning "
-}
-else if(hour < 18){
-this.greeting = "Good Afternoon "
-}
-else{
-this.greeting = "Good Evening "
-}
+async getAllLeaves(){
 
 const token = localStorage.getItem("token")
 
 const res = await API.get("/leave/all",{
-headers:{authorization:token}
+headers:{ authorization: token }
 })
 
 this.leaves = res.data
@@ -240,35 +283,58 @@ this.approved = this.leaves.filter(l=>l.status==="Approved").length
 this.pending = this.leaves.filter(l=>l.status==="Pending").length
 this.rejected = this.leaves.filter(l=>l.status==="Rejected").length
 
-this.recent = this.leaves.slice(0,5)
+this.recentLeaves = this.leaves.slice(0,5)
 
 },
 
-methods:{
-
-async approve(id){
+async approveLeave(id){
 
 const token = localStorage.getItem("token")
 
 await API.put(`/leave/approve/${id}`,{},{
-headers:{authorization:token}
+headers:{ authorization: token }
 })
 
-location.reload()
+this.getAllLeaves()
 
 },
 
-async reject(id){
+async rejectLeave(id){
 
 const token = localStorage.getItem("token")
 
 await API.put(`/leave/reject/${id}`,{},{
-headers:{authorization:token}
+headers:{ authorization: token }
 })
 
-location.reload()
+this.getAllLeaves()
 
 }
+
+},
+
+mounted(){
+
+this.name = localStorage.getItem("name")
+this.email = localStorage.getItem("email")
+this.role = localStorage.getItem("role")
+
+const date = new Date()
+
+this.today = date.toLocaleDateString("en-US",{
+weekday:"long",
+year:"numeric",
+month:"long",
+day:"numeric"
+})
+
+this.updateTime()
+
+setInterval(()=>{
+this.updateTime()
+},1000)
+
+this.getAllLeaves()
 
 }
 

@@ -6,12 +6,16 @@
 
 <div class="flex-1 p-6">
 
-<h2 class="text-xl font-semibold mb-2">
+<h2 class="text-xl font-semibold mb-1">
 {{ greeting }}, {{ username }} 👋
 </h2>
 
+<p class="text-gray-500 mb-4">
+{{ today }} | {{ time }}
+</p>
 
-<!-- Stats Cards -->
+
+<!-- STATS -->
 
 <div class="grid grid-cols-4 gap-4 mb-6">
 
@@ -38,7 +42,7 @@ Rejected
 </div>
 
 
-<!-- Recent Leave Requests -->
+<!-- RECENT LEAVE REQUESTS -->
 
 <h2 class="text-xl font-bold mb-4">
 Recent Leave Requests
@@ -48,7 +52,7 @@ Recent Leave Requests
 
 <thead>
 <tr class="bg-gray-200">
-<th class="p-2">Type</th>
+<th class="p-2">Leave Type</th>
 <th class="p-2">Start</th>
 <th class="p-2">End</th>
 <th class="p-2">Status</th>
@@ -57,13 +61,13 @@ Recent Leave Requests
 
 <tbody>
 
-<tr v-if="recent.length === 0">
+<tr v-if="recentLeaves.length === 0">
 <td colspan="4" class="text-center p-4 text-gray-500">
-No leave requests found
+No recent leave requests
 </td>
 </tr>
 
-<tr v-for="leave in recent" :key="leave._id">
+<tr v-for="leave in recentLeaves" :key="leave._id">
 
 <td class="p-2">{{leave.leaveType}}</td>
 
@@ -78,20 +82,23 @@ No leave requests found
 <td class="p-2">
 
 <span
-v-if="leave.status === 'Pending'"
-class="bg-yellow-200 px-2 py-1 rounded">
-Pending
-</span>
-
-<span
-v-else-if="leave.status === 'Approved'"
-class="bg-green-200 px-2 py-1 rounded">
+v-if="leave.status==='Approved'"
+class="bg-green-100 text-green-700 px-2 py-1 rounded"
+>
 Approved
 </span>
 
 <span
+v-else-if="leave.status==='Pending'"
+class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded"
+>
+Pending
+</span>
+
+<span
 v-else
-class="bg-red-200 px-2 py-1 rounded">
+class="bg-red-100 text-red-700 px-2 py-1 rounded"
+>
 Rejected
 </span>
 
@@ -110,6 +117,7 @@ Rejected
 </template>
 
 
+
 <script>
 
 import Sidebar from "../components/Sidebar.vue"
@@ -123,13 +131,16 @@ data(){
 return{
 
 leaves:[],
-recent:[],
+recentLeaves:[],
+username:"",
+greeting:"",
+today:"",
+time:"",
+
 total:0,
 approved:0,
 pending:0,
-rejected:0,
-username:"",
-greeting:""
+rejected:0
 
 }
 },
@@ -140,15 +151,24 @@ this.username = localStorage.getItem("name")
 
 const hour = new Date().getHours()
 
-if(hour < 12){
-this.greeting = "Good Morning "
-}
-else if(hour < 18){
-this.greeting = "Good Afternoon "
-}
-else{
-this.greeting = "Good Evening "
-}
+if(hour < 12) this.greeting="Good Morning"
+else if(hour < 18) this.greeting="Good Afternoon"
+else this.greeting="Good Evening"
+
+const date = new Date()
+
+this.today = date.toLocaleDateString("en-US",{
+weekday:"long",
+year:"numeric",
+month:"long",
+day:"numeric"
+})
+
+this.updateTime()
+
+setInterval(()=>{
+this.updateTime()
+},1000)
 
 const token = localStorage.getItem("token")
 
@@ -158,13 +178,23 @@ headers:{authorization:token}
 
 this.leaves = res.data
 
+// Stats
+
 this.total = this.leaves.length
 this.approved = this.leaves.filter(l=>l.status==="Approved").length
 this.pending = this.leaves.filter(l=>l.status==="Pending").length
 this.rejected = this.leaves.filter(l=>l.status==="Rejected").length
 
-this.recent = this.leaves.slice(0,5)
+// Recent Leaves
 
+this.recentLeaves = this.leaves.slice(0,5)
+
+},
+
+methods:{
+updateTime(){
+this.time = new Date().toLocaleTimeString()
+}
 }
 
 }
