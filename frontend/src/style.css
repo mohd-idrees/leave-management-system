@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global page styling */
+
+body{
+  @apply bg-gray-100 font-sans;
+}
+
+/* Table styling */
+
+table{
+  @apply border-collapse w-full;
+}
+
+th{
+  @apply bg-gray-200 p-2 text-left;
+}
+
+td{
+  @apply p-2 border;
+}
+
+/* Button hover */
+
+button{
+  @apply transition duration-200;
+}
